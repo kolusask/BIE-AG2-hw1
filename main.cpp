@@ -1,6 +1,7 @@
 #include <set>
 
 
+
 struct Node {
     bool undef = false;
     unsigned disc, low;
@@ -9,11 +10,10 @@ struct Node {
 
 using Graph = std::vector<Node>;
 
-Neighbors read_input() {
+Graph read_input() {
     unsigned nNodes, nEdges;
-    std::cin >> nNodes, nEdges;
-    Neighbors result;
-    result.reserve(nNodes);
+    std::cin >> nNodes >> nEdges;
+    Graph result(nNodes);
     for (unsigned i = 0; i < nEdges; i++) {
         unsigned n1, n2;
         std::cin >> n1 >> n2;
