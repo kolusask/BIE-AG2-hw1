@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <iostream>
 #include <list>
 #include <set>
@@ -7,45 +8,59 @@
 #define UNDEF 0
 
 struct Node {
+    void insert_child(const int child) { children.insert(child); }
     unsigned in = UNDEF, low = INF;
     std::set<unsigned> adj;
     std::set<unsigned> children;
 };
 
-using Graph = std::vector<Node>;
 using Edge = std::pair<unsigned, unsigned>;
+
+class Graph {
+  public:
+    Graph(const unsigned nNodes, const std::set<Edge>& edges) : mNodes(nNodes) {
+        for (Edge edge : edges) {
+            mNodes[edge.first].adj.insert(edge.second);
+            mNodes[edge.second].adj.insert(edge.first);
+        }
+    }
+    unsigned size() const { return mNodes.size(); }
+    Node& operator[](const unsigned ind) { return mNodes[ind]; }
+
+  private:
+    std::vector<Node> mNodes;
+};
 
 Graph read_input() {
     unsigned nNodes, nEdges;
     std::cin >> nNodes >> nEdges;
-    Graph result(nNodes);
+    std::set<Edge> edges;
     for (unsigned i = 0; i < nEdges; i++) {
         unsigned n1, n2;
         std::cin >> n1 >> n2;
-        result[n1].adj.insert(n2);
-        result[n2].adj.insert(n1);
+        edges.insert(Edge(n1, n2));
     }
-    return result;
+    return Graph(nNodes, edges);
 }
 
 unsigned count = 0;
 
-void dfs(Graph& graph, const unsigned node, const unsigned parent, std::set<unsigned>& ap, std::list<Edge>& st) {
+void dfs(Graph& graph, const unsigned node, const unsigned parent, std::list<Edge>& st, std::vector<std::set<Edge>>& bc) {
     graph[node].in = ++count;
     for (unsigned ch : graph[node].adj) {
         if (graph[ch].in == UNDEF) {
-            graph[node].children.insert(ch);
+            graph[node].insert_child(ch);
             st.push_back(Edge(node, ch));
-            dfs(graph, ch, node, ap, st);
+            dfs(graph, ch, node, st, bc);
             if (graph[ch].low >= graph[node].in && (parent != INF || graph[node].children.size() > 1)) {
-                ap.insert(node);
+                std::set<Edge> connEdges;
                 while (st.back().first != node || st.back().second != ch) {
-                    std::cout << st.back().first << "--" << st.back().second << "  ";
+                    connEdges.insert(st.back());
                     st.pop_back();
                 }
-                std::cout << st.back().first << "--" << st.back().second;
+                connEdges.insert(st.back());
                 st.pop_back();
-                std::cout << std::endl;
+                bc.push_back(connEdges);
             }
             graph[node].low = std::min(graph[node].low, graph[ch].low);
         } else if (graph[ch].in < graph[node].in && ch != parent) {
@@ -56,29 +71,30 @@ void dfs(Graph& graph, const unsigned node, const unsigned parent, std::set<unsi
     }
 }
 
-std::set<unsigned> find_articulation_points(Graph& graph) {
-    std::set<unsigned> artPoints;
-        std::list<Edge> edgeStack;
+std::vector<std::set<Edge>> biconnected_edges(Graph& graph) {
+    std::vector<std::set<Edge>> result;
+    std::list<Edge> edgeStack;
     for (unsigned i = 0; i < graph.size(); i++) {
         if (graph[i].in == UNDEF)
-            dfs(graph, i, INF, artPoints, edgeStack);
-        bool j = false;
+            dfs(graph, i, INF, edgeStack, result);
+        std::set<Edge> edgeSet;
         while (edgeStack.size() > 0) {
-            j = true;
-            std::cout << edgeStack.back().first << "--" << edgeStack.back().second << "  ";
+            edgeSet.insert(edgeStack.back());
             edgeStack.pop_back();
         }
-        if (j)
-            std::cout << std::endl;
+        if (!edgeSet.empty())
+            result.push_back(edgeSet);
     }
-    return artPoints;
+    return result;
 }
 
 int main() {
     auto graph = read_input();
-    for (auto p : find_articulation_points(graph))
-        std::cout << p << ' ';
-    std::cout << std::endl;
+    for (auto comp : biconnected_edges(graph)) {
+        for (auto edge : comp)
+            std::cout << edge.first << "--" << edge.second << ' ';
+        std::cout << std::endl;
+    }
     return 0;
 }
 
