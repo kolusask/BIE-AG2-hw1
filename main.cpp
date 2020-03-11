@@ -15,10 +15,12 @@ struct Node {
 };
 
 using Edge = std::pair<unsigned, unsigned>;
+using EdgeSet = std::set<Edge>;
+
 
 class Graph {
   public:
-    Graph(const unsigned nNodes, const std::set<Edge>& edges) : mNodes(nNodes) {
+    Graph(const unsigned nNodes, const EdgeSet& edges) : mNodes(nNodes) {
         for (Edge edge : edges) {
             mNodes[edge.first].adj.insert(edge.second);
             mNodes[edge.second].adj.insert(edge.first);
@@ -34,7 +36,7 @@ class Graph {
 Graph read_input() {
     unsigned nNodes, nEdges;
     std::cin >> nNodes >> nEdges;
-    std::set<Edge> edges;
+    EdgeSet edges;
     for (unsigned i = 0; i < nEdges; i++) {
         unsigned n1, n2;
         std::cin >> n1 >> n2;
@@ -45,7 +47,7 @@ Graph read_input() {
 
 unsigned count = 0;
 
-void dfs(Graph& graph, const unsigned node, const unsigned parent, std::list<Edge>& st, std::vector<std::set<Edge>>& bc) {
+void dfs(Graph& graph, const unsigned node, const unsigned parent, std::list<Edge>& st, std::vector<EdgeSet>& bc) {
     graph[node].in = ++count;
     for (unsigned ch : graph[node].adj) {
         if (graph[ch].in == UNDEF) {
@@ -53,7 +55,7 @@ void dfs(Graph& graph, const unsigned node, const unsigned parent, std::list<Edg
             st.push_back(Edge(node, ch));
             dfs(graph, ch, node, st, bc);
             if (graph[ch].low >= graph[node].in && (parent != INF || graph[node].children.size() > 1)) {
-                std::set<Edge> connEdges;
+                EdgeSet connEdges;
                 while (st.back().first != node || st.back().second != ch) {
                     connEdges.insert(st.back());
                     st.pop_back();
@@ -71,13 +73,13 @@ void dfs(Graph& graph, const unsigned node, const unsigned parent, std::list<Edg
     }
 }
 
-std::vector<std::set<Edge>> biconnected_edges(Graph& graph) {
-    std::vector<std::set<Edge>> result;
+std::vector<EdgeSet> biconnected_edges(Graph& graph) {
+    std::vector<EdgeSet> result;
     std::list<Edge> edgeStack;
     for (unsigned i = 0; i < graph.size(); i++) {
         if (graph[i].in == UNDEF)
             dfs(graph, i, INF, edgeStack, result);
-        std::set<Edge> edgeSet;
+        EdgeSet edgeSet;
         while (edgeStack.size() > 0) {
             edgeSet.insert(edgeStack.back());
             edgeStack.pop_back();
@@ -85,6 +87,13 @@ std::vector<std::set<Edge>> biconnected_edges(Graph& graph) {
         if (!edgeSet.empty())
             result.push_back(edgeSet);
     }
+    std::sort(
+        result.begin(),
+        result.end(),
+        [](const EdgeSet& s1, const EdgeSet& s2) -> bool {
+            return s1.size() > s2.size();
+        }
+    );
     return result;
 }
 
