@@ -49,13 +49,13 @@ Graph read_input() {
 
 unsigned count = 0;
 
-bool noc_dfs(Graph& graph, const EdgeSet& edges, const unsigned node, const unsigned parent, const unsigned count) {
+bool hoc_dfs(Graph& graph, const EdgeSet& edges, const unsigned node, const unsigned parent, const unsigned count) {
     graph[node].in2 = count;
     bool foundOdd = false;
     for (unsigned ch : graph[node].adj) {
         if (edges.count(Edge(node, ch)) && ch != parent) {
             if (graph[ch].in2 == UNDEF)
-                foundOdd = noc_dfs(graph, edges, ch, node, count + 1);
+                foundOdd = hoc_dfs(graph, edges, ch, node, count + 1);
             else
                 foundOdd = (graph[node].in2 - graph[ch].in2) % 2 == 0;
         }
@@ -67,9 +67,9 @@ bool noc_dfs(Graph& graph, const EdgeSet& edges, const unsigned node, const unsi
     return foundOdd;
 }
 
-bool no_odd_cycles(Graph& graph, const EdgeSet& edges) {
+bool has_odd_cycles(Graph& graph, const EdgeSet& edges) {
     unsigned node = (*edges.begin()).first;
-    return !noc_dfs(graph, edges, node, INF, 0);
+    return hoc_dfs(graph, edges, node, INF, 0);
 }
 
 void be_dfs(Graph& graph, const unsigned node, const unsigned parent, std::list<Edge>& st, std::vector<EdgeSet>& bc) {
@@ -89,8 +89,7 @@ void be_dfs(Graph& graph, const unsigned node, const unsigned parent, std::list<
                 connEdges.insert(st.back());
                 connEdges.insert(Edge(st.back().second, st.back().first));
                 st.pop_back();
-                if (no_odd_cycles(graph, connEdges))
-                    bc.push_back(connEdges);
+                bc.push_back(connEdges);
             }
             graph[node].low = std::min(graph[node].low, graph[ch].low);
         } else if (graph[ch].in < graph[node].in && ch != parent) {
@@ -105,25 +104,30 @@ EdgeSet biconnected_edges(Graph& graph) {
     std::vector<EdgeSet> result;
     std::list<Edge> edgeStack;
     for (unsigned i = 0; i < graph.size(); i++) {
-        if (graph[i].in == UNDEF)
+        if (graph[i].in == UNDEF) {
             be_dfs(graph, i, INF, edgeStack, result);
-        EdgeSet edgeSet;
-        while (edgeStack.size() > 0) {
-            edgeSet.insert(edgeStack.back());
-            edgeSet.insert(Edge(edgeStack.back().second, edgeStack.back().first));
-            edgeStack.pop_back();
+            EdgeSet edgeSet;
+            while (edgeStack.size() > 0) {
+                edgeSet.insert(edgeStack.back());
+                edgeSet.insert(Edge(edgeStack.back().second, edgeStack.back().first));
+                edgeStack.pop_back();
+            }
+            if (!edgeSet.empty())
+                result.push_back(edgeSet);
         }
-        if (!edgeSet.empty() && no_odd_cycles(graph, edgeSet))
-            result.push_back(edgeSet);
     }
-    return result.empty() ? std::set<Edge>() : 
-    *std::max_element(
-        result.begin(), 
-        result.end(), 
-        [](const EdgeSet& es1, const EdgeSet& es2) -> bool { 
-            return es1.size() < es2.size(); 
+    if (result.empty())
+        return EdgeSet();
+    std::sort(
+        result.begin(),
+        result.end(),
+        [](const EdgeSet& es1, const EdgeSet& es2) -> bool {
+            return es1.size() < es2.size();
         }
     );
+    while (!result.empty() && has_odd_cycles(graph, result.back()))
+        result.pop_back();
+    return result.empty() ? EdgeSet() : result.back();
 }
 
 NodeSet nodes_from_edges(const EdgeSet& edges) {
@@ -196,4 +200,42 @@ int main() {
     5 8
     8 9
     10 11
+    ---
+    6 8
+    0 1
+    1 2
+    2 3
+    2 5
+    5 4
+    2 4
+    1 4
+    0 3
+    ---
+    18 26
+    0 1
+    1 3
+    2 3
+    1 2
+    1 4
+    4 5
+    1 5
+    4 6
+    5 6
+    6 7
+    6 10
+    7 10
+    8 10
+    9 10
+    7 8
+    8 9
+    7 13
+    12 13
+    11 12
+    11 7
+    14 17
+    12 14
+    9 15
+    9 16
+    16 17
+    9 17
 */
