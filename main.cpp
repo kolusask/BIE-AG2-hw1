@@ -80,6 +80,7 @@ void be_dfs(Graph& graph, const unsigned node, const unsigned parent, std::list<
             st.push_back(Edge(node, ch));
             be_dfs(graph, ch, node, st, bc);
             if (graph[ch].low >= graph[node].in && (parent != INF || graph[node].children.size() > 1)) {
+                std::cout << node << std::endl;
                 EdgeSet connEdges;
                 while (st.back().first != node || st.back().second != ch) {
                     connEdges.insert(st.back());
@@ -213,29 +214,29 @@ int main() {
     ---
     18 26
     0 1
-    1 3
-    2 3
     1 2
+    2 3
+    1 3
     1 4
-    4 5
-    1 5
     4 6
     5 6
-    6 7
-    6 10
-    7 10
-    8 10
-    9 10
-    7 8
-    8 9
-    7 13
-    12 13
+    1 5
+    4 5
+    7 11
     11 12
-    11 7
-    14 17
-    12 14
-    9 15
+    7 13
+    13 12
+    7 14
+    14 12
+    15 9
     9 16
     16 17
-    9 17
+    17 9
+    6 7
+    7 8
+    8 9
+    10 6
+    10 7
+    10 8
+    10 9
 */
