@@ -113,14 +113,15 @@ EdgeSet biconnected_edges(Graph& graph) {
             edgeSet.insert(Edge(edgeStack.back().second, edgeStack.back().first));
             edgeStack.pop_back();
         }
-        if (!edgeSet.empty())
+        if (!edgeSet.empty() && no_odd_cycles(graph, edgeSet))
             result.push_back(edgeSet);
     }
-    return *std::max_element(
+    return result.empty() ? std::set<Edge>() : 
+    *std::max_element(
         result.begin(), 
         result.end(), 
         [](const EdgeSet& es1, const EdgeSet& es2) -> bool { 
-            return es1.size() > es2.size(); 
+            return es1.size() < es2.size(); 
         }
     );
 }
@@ -141,7 +142,8 @@ int main() {
     std::cout << nodes.size() << std::endl;
     for (unsigned node : nodes)
         std::cout << node << ' ';
-    std::cout << std::endl;
+    if (!nodes.empty())
+        std::cout << std::endl;
     return 0;
 }
 
