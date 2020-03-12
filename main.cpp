@@ -10,10 +10,12 @@
 struct Node {
     void insert_child(const int child) { children.insert(child); }
     unsigned in = UNDEF, low = INF;
+    unsigned in2 = UNDEF;
     std::set<unsigned> adj;
     std::set<unsigned> children;
 };
 
+using NodeSet = std::set<unsigned>;
 using Edge = std::pair<unsigned, unsigned>;
 using EdgeSet = std::set<Edge>;
 
@@ -47,22 +49,48 @@ Graph read_input() {
 
 unsigned count = 0;
 
-void dfs(Graph& graph, const unsigned node, const unsigned parent, std::list<Edge>& st, std::vector<EdgeSet>& bc) {
+bool noc_dfs(Graph& graph, const EdgeSet& edges, const unsigned node, const unsigned parent, const unsigned count) {
+    graph[node].in2 = count;
+    bool foundOdd = false;
+    for (unsigned ch : graph[node].adj) {
+        if (edges.count(Edge(node, ch)) && ch != parent) {
+            if (graph[ch].in2 == UNDEF)
+                foundOdd = noc_dfs(graph, edges, ch, node, count + 1);
+            else
+                foundOdd = (graph[node].in2 - graph[ch].in2) % 2 == 0;
+        }
+        if (foundOdd) {
+            graph[node].in2 = UNDEF;
+            break;
+        }
+    }
+    return foundOdd;
+}
+
+bool no_odd_cycles(Graph& graph, const EdgeSet& edges) {
+    unsigned node = (*edges.begin()).first;
+    return !noc_dfs(graph, edges, node, INF, 0);
+}
+
+void be_dfs(Graph& graph, const unsigned node, const unsigned parent, std::list<Edge>& st, std::vector<EdgeSet>& bc) {
     graph[node].in = ++count;
     for (unsigned ch : graph[node].adj) {
         if (graph[ch].in == UNDEF) {
             graph[node].insert_child(ch);
             st.push_back(Edge(node, ch));
-            dfs(graph, ch, node, st, bc);
+            be_dfs(graph, ch, node, st, bc);
             if (graph[ch].low >= graph[node].in && (parent != INF || graph[node].children.size() > 1)) {
                 EdgeSet connEdges;
                 while (st.back().first != node || st.back().second != ch) {
                     connEdges.insert(st.back());
+                    connEdges.insert(Edge(st.back().second, st.back().first));
                     st.pop_back();
                 }
                 connEdges.insert(st.back());
+                connEdges.insert(Edge(st.back().second, st.back().first));
                 st.pop_back();
-                bc.push_back(connEdges);
+                if (no_odd_cycles(graph, connEdges))
+                    bc.push_back(connEdges);
             }
             graph[node].low = std::min(graph[node].low, graph[ch].low);
         } else if (graph[ch].in < graph[node].in && ch != parent) {
@@ -73,37 +101,47 @@ void dfs(Graph& graph, const unsigned node, const unsigned parent, std::list<Edg
     }
 }
 
-std::vector<EdgeSet> biconnected_edges(Graph& graph) {
+EdgeSet biconnected_edges(Graph& graph) {
     std::vector<EdgeSet> result;
     std::list<Edge> edgeStack;
     for (unsigned i = 0; i < graph.size(); i++) {
         if (graph[i].in == UNDEF)
-            dfs(graph, i, INF, edgeStack, result);
+            be_dfs(graph, i, INF, edgeStack, result);
         EdgeSet edgeSet;
         while (edgeStack.size() > 0) {
             edgeSet.insert(edgeStack.back());
+            edgeSet.insert(Edge(edgeStack.back().second, edgeStack.back().first));
             edgeStack.pop_back();
         }
         if (!edgeSet.empty())
             result.push_back(edgeSet);
     }
-    std::sort(
-        result.begin(),
-        result.end(),
-        [](const EdgeSet& s1, const EdgeSet& s2) -> bool {
-            return s1.size() > s2.size();
+    return *std::max_element(
+        result.begin(), 
+        result.end(), 
+        [](const EdgeSet& es1, const EdgeSet& es2) -> bool { 
+            return es1.size() > es2.size(); 
         }
     );
-    return result;
+}
+
+NodeSet nodes_from_edges(const EdgeSet& edges) {
+    NodeSet nodes;
+    for (Edge e : edges) {
+        nodes.insert(e.first);
+        nodes.insert(e.second);
+    }
+    return nodes;
 }
 
 int main() {
     auto graph = read_input();
-    for (auto comp : biconnected_edges(graph)) {
-        for (auto edge : comp)
-            std::cout << edge.first << "--" << edge.second << ' ';
-        std::cout << std::endl;
-    }
+    auto edges = biconnected_edges(graph);
+    auto nodes = nodes_from_edges(edges);
+    std::cout << nodes.size() << std::endl;
+    for (unsigned node : nodes)
+        std::cout << node << ' ';
+    std::cout << std::endl;
     return 0;
 }
 
