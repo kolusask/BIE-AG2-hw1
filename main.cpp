@@ -23,13 +23,17 @@ using EdgeSet = std::set<Edge>;
 class Graph {
   public:
     Graph(const unsigned nNodes, const EdgeSet& edges) : mNodes(nNodes) {
-        for (Edge edge : edges) {
+        for (const Edge& edge : edges) {
             mNodes[edge.first].adj.insert(edge.second);
             mNodes[edge.second].adj.insert(edge.first);
         }
     }
     unsigned size() const { return mNodes.size(); }
     Node& operator[](const unsigned ind) { return mNodes[ind]; }
+    void refresh() {
+        for (auto& node : mNodes)
+            node.in2 = UNDEF;
+    }
 
   private:
     std::vector<Node> mNodes;
@@ -59,17 +63,18 @@ bool hoc_dfs(Graph& graph, const EdgeSet& edges, const unsigned node, const unsi
             else
                 foundOdd = (graph[node].in2 - graph[ch].in2) % 2 == 0;
         }
-        if (foundOdd) {
-            graph[node].in2 = UNDEF;
+        if (foundOdd)
             break;
-        }
     }
     return foundOdd;
 }
 
 bool has_odd_cycles(Graph& graph, const EdgeSet& edges) {
     unsigned node = (*edges.begin()).first;
-    return hoc_dfs(graph, edges, node, INF, 0);
+    bool hasOdd = hoc_dfs(graph, edges, node, INF, 0);
+    if (hasOdd)
+        graph.refresh();
+    return hasOdd;
 }
 
 void be_dfs(Graph& graph, const unsigned node, const unsigned parent, std::list<Edge>& st, std::vector<EdgeSet>& bc) {
