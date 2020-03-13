@@ -80,7 +80,6 @@ void be_dfs(Graph& graph, const unsigned node, const unsigned parent, std::list<
             st.push_back(Edge(node, ch));
             be_dfs(graph, ch, node, st, bc);
             if (graph[ch].low >= graph[node].in && (parent != INF || graph[node].children.size() > 1)) {
-                std::cout << node << std::endl;
                 EdgeSet connEdges;
                 while (st.back().first != node || st.back().second != ch) {
                     connEdges.insert(st.back());
@@ -99,6 +98,15 @@ void be_dfs(Graph& graph, const unsigned node, const unsigned parent, std::list<
                 st.push_back(Edge(node, ch));
         }
     }
+}
+
+NodeSet nodes_from_edges(const EdgeSet& edges) {
+    NodeSet nodes;
+    for (Edge e : edges) {
+        nodes.insert(e.first);
+        nodes.insert(e.second);
+    }
+    return nodes;
 }
 
 EdgeSet biconnected_edges(Graph& graph) {
@@ -123,21 +131,12 @@ EdgeSet biconnected_edges(Graph& graph) {
         result.begin(),
         result.end(),
         [](const EdgeSet& es1, const EdgeSet& es2) -> bool {
-            return es1.size() < es2.size();
+            return nodes_from_edges(es1).size() < nodes_from_edges(es2).size();
         }
     );
     while (!result.empty() && has_odd_cycles(graph, result.back()))
         result.pop_back();
     return result.empty() ? EdgeSet() : result.back();
-}
-
-NodeSet nodes_from_edges(const EdgeSet& edges) {
-    NodeSet nodes;
-    for (Edge e : edges) {
-        nodes.insert(e.first);
-        nodes.insert(e.second);
-    }
-    return nodes;
 }
 
 int main() {
@@ -239,4 +238,6 @@ int main() {
     10 7
     10 8
     10 9
+    ---
+    
 */
