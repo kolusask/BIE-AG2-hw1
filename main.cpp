@@ -53,37 +53,19 @@ Graph read_input() {
 
 unsigned count = 0;
 
-bool hoc_dfs(Graph& graph, const EdgeSet& edges, const unsigned node, const unsigned parent, const unsigned count) {
-    graph[node].in2 = count;
-    bool foundOdd = false;
-    for (unsigned ch : graph[node].adj) {
-        if (edges.count(Edge(node, ch)) && ch != parent) {
-            if (graph[ch].in2 == UNDEF)
-                foundOdd = hoc_dfs(graph, edges, ch, node, count + 1);
-            else
-                foundOdd = (graph[node].in2 - graph[ch].in2) % 2 == 0;
-        }
-        if (foundOdd)
-            break;
-    }
-    return foundOdd;
-}
+
 
 bool has_odd_cycles(Graph& graph, const EdgeSet& edges) {
-    unsigned node = (*edges.begin()).first;
-    bool hasOdd = hoc_dfs(graph, edges, node, INF, 0);
-    if (hasOdd)
-        graph.refresh();
-    return hasOdd;
+    // use BFS here!
 }
 
-void be_dfs(Graph& graph, const unsigned node, const unsigned parent, std::list<Edge>& st, std::vector<EdgeSet>& bc) {
+void dfs(Graph& graph, const unsigned node, const unsigned parent, std::list<Edge>& st, std::vector<EdgeSet>& bc) {
     graph[node].in = ++count;
     for (unsigned ch : graph[node].adj) {
         if (graph[ch].in == UNDEF) {
             graph[node].insert_child(ch);
             st.push_back(Edge(node, ch));
-            be_dfs(graph, ch, node, st, bc);
+            dfs(graph, ch, node, st, bc);
             if (graph[ch].low >= graph[node].in && (parent != INF || graph[node].children.size() > 1)) {
                 EdgeSet connEdges;
                 while (st.back().first != node || st.back().second != ch) {
@@ -119,7 +101,7 @@ EdgeSet biconnected_edges(Graph& graph) {
     std::list<Edge> edgeStack;
     for (unsigned i = 0; i < graph.size(); i++) {
         if (graph[i].in == UNDEF) {
-            be_dfs(graph, i, INF, edgeStack, result);
+            dfs(graph, i, INF, edgeStack, result);
             EdgeSet edgeSet;
             while (edgeStack.size() > 0) {
                 edgeSet.insert(edgeStack.back());
